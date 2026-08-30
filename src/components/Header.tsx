@@ -40,7 +40,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
           </div>
         ) : (
           <>
-            <div className="flex min-w-0 items-center gap-2.5 sm:gap-4">
+            <div className="flex shrink-0 items-center gap-2.5 sm:gap-4">
               {onToggleSidebar && (
                 <button
                   type="button"
@@ -58,13 +58,15 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
               >
                 Untad Chronicle
               </Link>
+            </div>
 
-              <div className="relative hidden items-center sm:flex">
-                <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-[var(--color-text-muted)]" />
+            <div className="hidden min-w-0 flex-1 items-center justify-center px-4 sm:flex">
+              <div className="relative w-full max-w-[280px] md:max-w-[360px] lg:max-w-[420px]">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
                 <input
                   type="search"
                   placeholder="Search stories, topics, authors..."
-                  className="h-8 w-44 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] pl-9 pr-3 text-xs text-[var(--color-text)] placeholder-[var(--color-text-muted)] transition-all duration-150 ease-in-out focus:border-[var(--color-text-secondary)] focus:bg-[var(--color-bg)] focus:outline-none md:w-56 lg:w-72"
+                  className="h-8 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] pl-9 pr-3 text-xs text-[var(--color-text)] placeholder-[var(--color-text-muted)] transition-colors duration-150 focus:border-[var(--color-text-secondary)] focus:bg-[var(--color-bg)] focus:outline-none"
                 />
               </div>
             </div>
