@@ -125,16 +125,16 @@ function Home() {
   })
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="min-h-screen bg-bg">
       <Header onToggleSidebar={() => setIsMobileSidebarOpen(true)} />
 
-      <div className="mx-auto flex max-w-[1340px] justify-center px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1340px] justify-between px-4 sm:px-6 lg:px-8">
         <Sidebar
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
-        <main className="min-w-0 max-w-[680px] flex-1 border-x-0 min-[900px]:border-x border-[var(--color-border)] px-0 min-[900px]:px-8 py-6">
+        <main className="min-w-0 w-full flex-1 px-0 py-6 min-[900px]:px-8 min-[1200px]:max-w-[680px]">
           <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
           <div className="flex flex-col">
@@ -153,7 +153,7 @@ function Home() {
           </div>
         </main>
 
-        <div className="hidden min-[1200px]:block w-[320px] shrink-0 pl-8">
+        <div className="hidden min-[1200px]:block w-[340px] shrink-0 border-l border-[var(--color-border)] pl-8">
           <div className="sticky top-16">
             <DiscoveryRail />
           </div>
