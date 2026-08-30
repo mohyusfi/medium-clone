@@ -134,7 +134,7 @@ function Home() {
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
-        <main className="min-w-0 max-w-[680px] flex-1 border-x-0 md:border-x border-[var(--color-border)] px-0 md:px-8 py-6">
+        <main className="min-w-0 max-w-[680px] flex-1 border-x-0 min-[900px]:border-x border-[var(--color-border)] px-0 min-[900px]:px-8 py-6">
           <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
           <div className="flex flex-col">
@@ -153,7 +153,7 @@ function Home() {
           </div>
         </main>
 
-        <div className="hidden lg:block w-[320px] shrink-0 pl-8">
+        <div className="hidden min-[1200px]:block w-[320px] shrink-0 pl-8">
           <div className="sticky top-16">
             <DiscoveryRail />
           </div>

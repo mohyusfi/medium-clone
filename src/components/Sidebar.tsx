@@ -115,12 +115,12 @@ export default function Sidebar({ isOpenMobile, onCloseMobile }: SidebarProps) {
 
   return (
     <>
-      <div className="hidden md:block w-48 shrink-0">
+      <div className="hidden min-[900px]:block w-48 shrink-0">
         <div className="sticky top-16">{content}</div>
       </div>
 
       {isOpenMobile && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
+        <div className="fixed inset-0 z-50 flex min-[900px]:hidden">
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
             onClick={onCloseMobile}

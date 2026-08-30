@@ -8,14 +8,14 @@ interface HeaderProps {
 
 export default function Header({ onToggleSidebar }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 flex h-12 w-full items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 sm:px-8">
+    <header className="sticky top-0 z-40 flex h-12 w-full items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)] px-6 sm:px-8">
       <div className="flex items-center gap-3 sm:gap-4">
         {onToggleSidebar && (
           <button
             type="button"
             onClick={onToggleSidebar}
             aria-label="Toggle navigation menu"
-            className="inline-flex h-8 w-8 items-center justify-center rounded text-[var(--color-text-secondary)] transition hover:text-[var(--color-text)] md:hidden"
+            className="inline-flex h-8 w-8 items-center justify-center rounded text-[var(--color-text-secondary)] transition hover:text-[var(--color-text)] min-[900px]:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -49,7 +49,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
         <Link
           to="/about"
-          className="hidden text-xs text-[var(--color-text-secondary)] no-underline transition hover:text-[var(--color-text)] md:inline-block"
+          className="hidden text-xs text-[var(--color-text-secondary)] no-underline transition hover:text-[var(--color-text)] min-[900px]:inline-block"
         >
           About
         </Link>

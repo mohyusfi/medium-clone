@@ -24,7 +24,7 @@ interface ArticleListItemProps {
 
 export default function ArticleListItem({ article }: ArticleListItemProps) {
   return (
-    <article className="group flex flex-col justify-between gap-4 border-b border-[var(--color-border)] py-7 sm:py-8 sm:flex-row">
+    <article className="group flex flex-col justify-between gap-6 border-b border-[var(--color-border)] py-7 sm:py-8 sm:flex-row">
       <div className="flex flex-1 flex-col justify-between">
         <div>
           <div className="mb-2.5 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
