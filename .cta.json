@@ -1,0 +1,29 @@
+{
+  "projectName": "web-article",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "npm",
+  "includeExamples": true,
+  "tailwind": true,
+  "projectPreset": "default",
+  "addOnOptions": {
+    "drizzle": {
+      "database": "mysql"
+    }
+  },
+  "git": true,
+  "install": true,
+  "intent": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "eslint",
+    "nitro",
+    "drizzle",
+    "compiler",
+    "mcp",
+    "shadcn",
+    "tanstack-query"
+  ]
+}
