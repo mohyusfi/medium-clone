@@ -1,214 +1,158 @@
-Welcome to your new TanStack Start app!
+# Web Article — Editorial Publishing Platform
 
-# Getting Started
+> Platform publikasi artikel bergaya editorial, content-first — dibangun dengan TanStack Start, React 19, dan Tailwind CSS v4.
 
-To run this application:
+[![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev)
+[![TanStack Start](https://img.shields.io/badge/TanStack-Start-FF4154?logo=react)](https://tanstack.com/start)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-C5F277?logo=drizzle&logoColor=black)](https://orm.drizzle.team)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+
+## Overview
+
+Web Article adalah aplikasi web untuk menulis, mempublikasikan, dan membaca artikel dengan pengalaman membaca editorial yang tenang dan fokus pada tipografi. Proyek ini mengutamakan hierarki konten, performa SSR, dan type-safety end-to-end.
+
+**Prinsip desain:** editorial clarity over decoration — terinspirasi Medium dengan layout tiga zona, palet netral, dan aksen yang restrained. Detail lengkap ada di [`DESIGN.md`](./DESIGN.md).
+
+## Features
+
+- **Editorial Reading Experience** — Layout 3 zona (Sidebar · Feed · Discovery Rail), tipografi serif untuk brand/headline dan sans-serif untuk body/metadata
+- **SSR & File-based Routing** — TanStack Start + TanStack Router dengan route tree generation otomatis
+- **Type-safe Data Layer** — TanStack Query dengan SSR hydration via `@tanstack/react-router-ssr-query`
+- **Relational Content Model** — `users` → `blogs` → `comments` (nested replies) + `likes` + `saves` (bookmarks), lihat [`DATABASE.md`](./DATABASE.md)
+- **Database Tooling** — Drizzle ORM (`mysql2`) + Drizzle Kit untuk migrasi dan studio
+- **MCP Ready** — Endpoint Model Context Protocol di `src/routes/mcp.ts`
+- **Design System** — Tailwind CSS v4 (`@theme inline`), `@tailwindcss/typography`, token warna di `src/styles.css`
+
+## Tech Stack
+
+| Layer        | Technology                                           |
+| ------------ | ---------------------------------------------------- |
+| Framework    | TanStack Start (Vite 8, Nitro adapter), React 19     |
+| Routing      | TanStack Router (file-based, `src/routes/`)          |
+| State / Data | TanStack Query + SSR hydration                       |
+| Styling      | Tailwind CSS v4, `tw-animate-css`, Lucide Icons      |
+| Database     | Drizzle ORM, `mysql2`, Drizzle Kit                   |
+| Validation   | Zod                                                  |
+| Tooling      | TypeScript, ESLint (TanStack config), Prettier, Vite |
+| MCP          | `@modelcontextprotocol/sdk`                          |
+
+## Project Structure
+
+```
+src/
+  components/   # Header, Sidebar, ArticleListItem, DiscoveryRail, dsb.
+  db/           # Drizzle client (index.ts) & schema (schema.ts)
+  integrations/ # TanStack Query provider & devtools
+  lib/          # Utilities (cn, dsb.)
+  routes/       # File-based routes (__root.tsx, index.tsx, mcp.ts, ...)
+  styles.css    # Tailwind v4 @theme inline & global tokens
+  router.tsx    # Router setup
+  routeTree.gen.ts # Generated — jangan edit manual
+
+docs/
+  DESIGN.md     # Editorial design system
+  DATABASE.md   # ERD, tabel, dan relasi
+  AGENTS.md     # Panduan arsitektur & operasional untuk agen/dev
+```
+
+Path alias: `#/*` dan `@/*` → `./src/*` (contoh: `#/components/ui/button`).
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+ dan npm/pnpm
+- MySQL 8+ (atau kompatibel) dan `DATABASE_URL`
+
+### Installation
 
 ```bash
 npm install
-npm run dev
+cp .env.example .env.local  # jika tersedia, atau buat manual
+npm run dev                 # http://localhost:3000
 ```
 
-# Building For Production
+### Environment Variables
 
-To build this application for production:
+Buat `.env` atau `.env.local`:
+
+```env
+DATABASE_URL=mysql://user:password@localhost:3306/web_article
+```
+
+> Format: `mysql://user:pass@host:port/dbname` — wajib untuk Drizzle. Lihat `AGENTS.md:60`.
+
+## Database
+
+Skema utama: `users`, `blogs`, `comments` (self-referencing `parent_id` untuk reply), `likes`, `saves`. ERD dan definisi kolom lengkap di [`DATABASE.md`](./DATABASE.md).
 
 ```bash
-npm run build
+npm run db:generate  # generate SQL migrations dari schema
+npm run db:push      # push schema langsung ke DB (dev)
+npm run db:migrate   # jalankan migrasi
+npm run db:studio    # buka Drizzle Studio
 ```
 
-## Styling
+Schema source: `src/db/schema.ts` · Client: `src/db/index.ts` · Config: `drizzle.config.ts`.
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+## Available Scripts
 
-### Removing Tailwind CSS
+| Script                       | Description                                      |
+| ---------------------------- | ------------------------------------------------ |
+| `npm run dev`                | Start dev server di port 3000                    |
+| `npm run generate-routes`    | Generate `src/routeTree.gen.ts` (`tsr generate`) |
+| `npm run build`              | Build production (Vite + Nitro)                  |
+| `npm run preview`            | Preview build                                    |
+| `node dist/server/index.mjs` | Jalankan artifact production                     |
+| `npm run check`              | Cek format Prettier                              |
+| `npm run format`             | Format Prettier + fix ESLint                     |
+| `npm run lint`               | ESLint (TanStack config)                         |
 
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-## Linting & Formatting
-
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
+**Verifikasi sebelum PR:**
 
 ```bash
-npm run lint
-npm run format
-npm run check
+npm run generate-routes && npm run check && npm run lint && npm run build
 ```
 
-## Deploy with Nitro
+## Styling & Design System
 
-This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
+- Tailwind v4 tanpa `tailwind.config.js` — konfigurasi via `@theme inline` di `src/styles.css`
+- Palet: `bg #FFFFFF`, `surface #FAFAFA`, `text #171717`, `border #E6E6E6`, `accent #FFC017`
+- Border 1px, radius restrained (2–4px), shadow minimal — baca [`DESIGN.md`](./DESIGN.md) untuk skala tipografi, spacing 4px, dan anti-pattern
+
+Menambah komponen UI:
+
+```bash
+pnpm dlx shadcn@latest add button
+# atau
+npx shadcn@latest add button
+```
+
+## Deployment (Nitro)
+
+Build menghasilkan server Node self-contained di `dist/server/index.mjs`. Deploy ke host Node-compatible (VPS, Render, Fly.io, dsb.):
 
 ```bash
 npm run build
 node dist/server/index.mjs
 ```
 
-The build output is a self-contained Node server. To deploy, push the `dist/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
+Untuk preset host spesifik (Vercel, Netlify, Cloudflare, AWS Lambda) lihat https://v3.nitro.build/deploy.
 
-For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
+## Documentation
 
-## Shadcn
+- [`AGENTS.md`](./AGENTS.md) — Arsitektur, path alias, gotchas, dan session rules
+- [`DATABASE.md`](./DATABASE.md) — Skema, ERD (ASCII + Mermaid), dan aturan FK
+- [`DESIGN.md`](./DESIGN.md) — Visual language, color, typography, layout, dan checklist
 
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
+## Contributing
 
-```bash
-pnpm dlx shadcn@latest add button
-```
+1. Buat branch dari `main`
+2. Jalankan sequence verifikasi di atas sebelum membuka PR
+3. Ikuti editorial aesthetic — hindari heavy shadow, gradient berlebihan, dan SaaS card pattern
+4. **Git Operations:** Jangan auto-commit/push/PR tanpa izin eksplisit — minta konfirmasi terlebih dahulu (lihat `AGENTS.md:67`)
 
-## Routing
+## License
 
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from '@tanstack/react-router'
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Private — untuk keperluan tugas/internal. Sesuaikan lisensi sebelum publikasi.
