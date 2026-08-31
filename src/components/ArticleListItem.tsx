@@ -127,7 +127,7 @@ export default function ArticleListItem({ article }: ArticleListItemProps) {
             <img
               src={article.thumbnail}
               alt=""
-              className="h-16 w-20 object-cover transition-transform duration-300 group-hover:scale-105 min-[400px]:h-20 min-[400px]:w-28 sm:h-24 sm:w-36 md:h-28 md:w-40"
+              className="h-24! w-20 object-cover transition-transform duration-300 group-hover:scale-105 min-[400px]:h-20 min-[400px]:w-28 sm:h-28 sm:w-36 md:h-28 md:w-40"
               loading="lazy"
             />
           </a>

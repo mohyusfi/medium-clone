@@ -19,7 +19,7 @@ const navItems = [
   { label: 'Library', href: '#library', icon: Bookmark, isActive: false },
   { label: 'Profile', href: '#profile', icon: User, isActive: false },
   { label: 'Stories', href: '#stories', icon: BookOpen, isActive: false },
-  { label: 'Stats', href: '#stats', icon: BarChart3, isActive: false },
+  // { label: 'Stats', href: '#stats', icon: BarChart3, isActive: false },
 ]
 
 const followingItems = [
@@ -115,7 +115,7 @@ export default function Sidebar({ isOpenMobile, onCloseMobile }: SidebarProps) {
 
   return (
     <>
-      <div className="hidden min-[900px]:block w-48 shrink-0">
+      <div className="hidden min-[900px]:block w-52 shrink-0 border-r border-[var(--color-border)] pr-6">
         <div className="sticky top-16">{content}</div>
       </div>
 
