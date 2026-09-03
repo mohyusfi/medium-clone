@@ -1,13 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import Header from '../components/Header'
-import Sidebar from '../components/Sidebar'
-import FeedTabs from '../components/FeedTabs'
-import ArticleListItem from '../components/ArticleListItem'
-import type { ArticleItem } from '../components/ArticleListItem'
-import DiscoveryRail from '../components/DiscoveryRail'
+import FeedTabs from '#/components/FeedTabs'
+import ArticleListItem from '#/components/ArticleListItem'
+import type { ArticleItem } from '#/components/ArticleListItem'
+import DiscoveryRail from '#/components/DiscoveryRail'
 
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute('/_app/')({
+  component: Home,
+})
 
 const sampleArticles: ArticleItem[] = [
   {
@@ -52,7 +52,7 @@ const sampleArticles: ArticleItem[] = [
     title:
       'Mengapa Tipografi Editorial Mengalahkan Pola Desain SaaS yang Klise',
     description:
-      'Pentingnya kembali ke esensi publikasi digital: hierarki pembacaan alami, pembatas struktural 1px, dan penataan ruang tanpa kartu terapung yang berlebihan.',
+      'Pentingnya Re: esensi publikasi digital: hierarki pembacaan alami, pembatas struktural 1px, dan penataan ruang tanpa kartu terapung yang berlebihan.',
     date: 'Aug 21',
     readTime: '5 min read',
     author: {
@@ -102,7 +102,6 @@ const sampleArticles: ArticleItem[] = [
 
 function Home() {
   const [activeTab, setActiveTab] = useState('for-you')
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   const filteredArticles = sampleArticles.filter((article) => {
     if (activeTab === 'featured') {
@@ -125,40 +124,31 @@ function Home() {
   })
 
   return (
-    <div className="min-h-screen bg-bg">
-      <Header onToggleSidebar={() => setIsMobileSidebarOpen(true)} />
+    <>
+      <main className="min-w-0 w-full flex-1 px-0 py-6 min-[900px]:px-8 min-[1200px]:max-w-[680px]">
+        <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="mx-auto flex w-full max-w-[1340px] justify-between px-4 sm:px-6 lg:px-8">
-        <Sidebar
-          isOpenMobile={isMobileSidebarOpen}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
-        />
+        <div className="flex flex-col">
+          {filteredArticles.map((article) => (
+            <ArticleListItem key={article.id} article={article} />
+          ))}
+        </div>
 
-        <main className="min-w-0 w-full flex-1 px-0 py-6 min-[900px]:px-8 min-[1200px]:max-w-[680px]">
-          <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="pt-8 text-center">
+          <button
+            type="button"
+            className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)] hover:bg-[var(--color-bg)]"
+          >
+            Load more stories
+          </button>
+        </div>
+      </main>
 
-          <div className="flex flex-col">
-            {filteredArticles.map((article) => (
-              <ArticleListItem key={article.id} article={article} />
-            ))}
-          </div>
-
-          <div className="pt-8 text-center">
-            <button
-              type="button"
-              className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)] hover:bg-[var(--color-bg)]"
-            >
-              Load more stories
-            </button>
-          </div>
-        </main>
-
-        <div className="hidden min-[1200px]:block w-[340px] shrink-0 border-l border-[var(--color-border)] pl-8">
-          <div className="sticky top-16">
-            <DiscoveryRail />
-          </div>
+      <div className="hidden min-[1200px]:block w-[340px] shrink-0 border-l border-[var(--color-border)] pl-8">
+        <div className="sticky top-16">
+          <DiscoveryRail />
         </div>
       </div>
-    </div>
+    </>
   )
 }
