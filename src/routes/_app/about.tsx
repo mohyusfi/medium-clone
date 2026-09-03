@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_app/about')({
 
 function About() {
   return (
-    <main className="min-w-0 w-full flex-1 px-0 py-12 min-[900px]:px-8 max-w-3xl">
+    <main className="min-w-0 w-full flex-1 px-0 py-12 min-[900px]:px-8 max-w-3xl mx-auto">
       <article className="prose prose-neutral max-w-none">
         <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
           About Untad Chronicle

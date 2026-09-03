@@ -4,7 +4,7 @@ import {
   Bookmark,
   User,
   BookOpen,
-  BarChart3,
+  Info,
   Plus,
   Compass,
 } from 'lucide-react'
@@ -14,12 +14,26 @@ interface SidebarProps {
   onCloseMobile?: () => void
 }
 
-const navItems = [
-  { label: 'Home', href: '/', icon: Home, isActive: true },
-  { label: 'Library', href: '#library', icon: Bookmark, isActive: false },
-  { label: 'Profile', href: '#profile', icon: User, isActive: false },
-  { label: 'Stories', href: '#stories', icon: BookOpen, isActive: false },
-  // { label: 'Stats', href: '#stats', icon: BarChart3, isActive: false },
+interface NavItem {
+  label: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  isRoute?: boolean
+  hideOnDesktop?: boolean
+}
+
+const navItems: NavItem[] = [
+  { label: 'Home', href: '/', icon: Home, isRoute: true },
+  {
+    label: 'About',
+    href: '/about',
+    icon: Info,
+    isRoute: true,
+    // hideOnDesktop: true,
+  },
+  // { label: 'Library', href: '#library', icon: Bookmark, isRoute: false },
+  // { label: 'Profile', href: '#profile', icon: User, isRoute: false },
+  { label: 'Stories', href: '#stories', icon: BookOpen, isRoute: false },
 ]
 
 const followingItems = [
@@ -36,20 +50,44 @@ export default function Sidebar({ isOpenMobile, onCloseMobile }: SidebarProps) {
         <ul className="flex flex-col gap-1 list-none m-0 p-0">
           {navItems.map((item) => {
             const Icon = item.icon
+            const liClassName = item.hideOnDesktop
+              ? 'min-[900px]:hidden'
+              : undefined
+
+            if (item.isRoute) {
+              return (
+                <li key={item.label} className={liClassName}>
+                  <Link
+                    to={item.href as '/' | '/about'}
+                    onClick={onCloseMobile}
+                    activeOptions={{ exact: true }}
+                    activeProps={{
+                      className:
+                        'font-bold text-[var(--color-text)] bg-[var(--color-surface)]',
+                    }}
+                    inactiveProps={{
+                      className:
+                        'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]',
+                    }}
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors no-underline"
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              )
+            }
+
             return (
-              <li key={item.label}>
-                <Link
-                  to={item.href}
+              <li key={item.label} className={liClassName}>
+                <a
+                  href={item.href}
                   onClick={onCloseMobile}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors no-underline ${
-                    item.isActive
-                      ? 'font-bold text-[var(--color-text)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]'
-                  }`}
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors no-underline hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
-                </Link>
+                </a>
               </li>
             )
           })}
