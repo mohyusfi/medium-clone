@@ -135,13 +135,13 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 <Search className="h-4 w-4" />
               </button>
 
-              <a
-                href="#write"
+              <Link
+                to="/write"
                 className="hidden items-center gap-1.5 text-xs text-[var(--color-text-secondary)] no-underline transition hover:text-[var(--color-text)] min-[900px]:inline-flex"
               >
                 <SquarePen className="h-4 w-4" />
                 <span className="hidden sm:inline">Write</span>
-              </a>
+              </Link>
 
               <button
                 type="button"
@@ -186,14 +186,14 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                     </div>
 
                     <div className="py-1">
-                      <a
-                        href="#write"
+                      <Link
+                        to="/write"
                         onClick={() => setIsProfileOpen(false)}
                         className="flex items-center md:hidden gap-2.5 px-3 py-2 text-xs text-[var(--color-text-secondary)] no-underline transition hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
                       >
                         <SquarePen className="h-4 w-4 shrink-0 text-[var(--color-text-muted)]" />
                         <span>Write</span>
-                      </a>
+                      </Link>
 
                       <a
                         href="#profile"
