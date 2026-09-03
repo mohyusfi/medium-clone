@@ -1,10 +1,12 @@
 # AGENTS.md
 
 ## common rules
+
 - **Explain Language**: use indonesian to only when explain something
 - **git/github**: always confirm before commit,merge,push etc
 
 ## mode agent
+
 - do not add comment in code build mode except it is important
 
 ## Overview & Architecture
