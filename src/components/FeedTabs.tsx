@@ -6,9 +6,7 @@ interface FeedTabsProps {
 
 const defaultTabs = [
   { id: 'for-you', label: 'For you' },
-  { id: 'featured', label: 'Featured' },
-  { id: 'academic', label: 'Academic Papers' },
-  { id: 'technology', label: 'Technology' },
+  { id: 'following', label: 'Following' },
 ]
 
 export default function FeedTabs({

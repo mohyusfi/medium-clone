@@ -1,10 +1,24 @@
 # AGENTS.md
 
-## Overview & Architecture
+## common rules
+
+- **Explain Language**: use indonesian to only when explain something
+- **git/github**: always confirm before commit,merge,push etc
+
+## mode agent
+
+- do not add comment in code build mode except it is important
+
+## skills agent
+
+- use /frontend-design for frontend things
+- use react skills for doing with react
+
+## Overview &amp; Architecture
 
 - **Framework**: TanStack Start (React 19, Vite 8, Nitro adapter).
 - **Routing**: TanStack Router (file-based in `src/routes/`). Generates `src/routeTree.gen.ts`.
-- **Data & State**: TanStack Query with SSR hydration via `@tanstack/react-router-ssr-query`.
+- **Data &amp; State**: TanStack Query with SSR hydration via `@tanstack/react-router-ssr-query`.
 - **Styling**: Tailwind CSS v4 (`@tailwindcss/vite`, `@tailwindcss/typography`, `tw-animate-css`). Theme tokens defined in `src/styles.css`.
 - **Database**: Drizzle ORM (`mysql2`) with schema reference in `DATABASE.md`, schema definitions in `src/db/schema.ts`, and client in `src/db/index.ts`.
 - **MCP Integration**: Model Context Protocol endpoints in `src/routes/mcp.ts` and `src/utils/mcp-handler.ts`.
@@ -54,7 +68,7 @@ When verifying code changes, execute in order:
 npm run generate-routes && npm run check && npm run lint && npm run build
 ```
 
-## Gotchas & Operational Notes
+## Gotchas &amp; Operational Notes
 
 1. **Route Generation**: If TypeScript complains about missing routes or invalid path arguments in `src/routes/`, run `npm run generate-routes` (`tsr generate`) to sync `src/routeTree.gen.ts`.
 2. **Database Config**: Drizzle requires `DATABASE_URL` configured in `.env.local` or `.env` (`mysql://user:pass@host:port/dbname`).
@@ -65,3 +79,17 @@ npm run generate-routes && npm run check && npm run lint && npm run build
    - Avoid adding unnecessary comments in code during Build Mode.
    - Use `frontend-design` skill prior to implementing new UI pages or visual components.
    - **Git Operations**: Dilarang melakukan auto-commit, push, atau create Pull Request (PR). Selalu minta izin dan konfirmasi eksplisit dari pengguna sebelum menjalankan git commit atau PR.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub issues via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical 5-role vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context (`CONTEXT.md` + `docs/adr/`). See `docs/agents/domain.md`.

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Sun, Moon, Monitor } from 'lucide-react'
 
-type ThemeMode = 'light' | 'dark' | 'auto'
+export type ThemeMode = 'light' | 'dark' | 'auto'
 
-function getInitialMode(): ThemeMode {
+export function getInitialMode(): ThemeMode {
   if (typeof window === 'undefined') {
     return 'auto'
   }
@@ -16,7 +16,7 @@ function getInitialMode(): ThemeMode {
   return 'auto'
 }
 
-function applyThemeMode(mode: ThemeMode) {
+export function applyThemeMode(mode: ThemeMode) {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const resolved = mode === 'auto' ? (prefersDark ? 'dark' : 'light') : mode
 
@@ -32,6 +32,12 @@ function applyThemeMode(mode: ThemeMode) {
   document.documentElement.style.colorScheme = resolved
 }
 
+export function setTheme(nextMode: ThemeMode) {
+  applyThemeMode(nextMode)
+  window.localStorage.setItem('theme', nextMode)
+  window.dispatchEvent(new CustomEvent('themechange', { detail: nextMode }))
+}
+
 export default function ThemeToggle() {
   const [mode, setMode] = useState<ThemeMode>('auto')
 
@@ -39,6 +45,16 @@ export default function ThemeToggle() {
     const initialMode = getInitialMode()
     setMode(initialMode)
     applyThemeMode(initialMode)
+
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<ThemeMode>
+      setMode(customEvent.detail)
+    }
+
+    window.addEventListener('themechange', handleThemeChange)
+    return () => {
+      window.removeEventListener('themechange', handleThemeChange)
+    }
   }, [])
 
   useEffect(() => {
@@ -59,8 +75,7 @@ export default function ThemeToggle() {
     const nextMode: ThemeMode =
       mode === 'light' ? 'dark' : mode === 'dark' ? 'auto' : 'light'
     setMode(nextMode)
-    applyThemeMode(nextMode)
-    window.localStorage.setItem('theme', nextMode)
+    setTheme(nextMode)
   }
 
   const label =
