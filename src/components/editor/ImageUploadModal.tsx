@@ -5,7 +5,7 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react'
-import { uploadImageFn } from '#/server/upload'
+import { uploadImageWithPresignedUrl } from '#/lib/image-compression'
 
 interface ImageUploadModalProps {
   isOpen: boolean
@@ -35,8 +35,8 @@ export default function ImageUploadModal({
       return
     }
 
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      setErrorMessage('Ukuran file maksimal adalah 5MB')
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setErrorMessage('Ukuran file maksimal adalah 10MB')
       return
     }
 
@@ -72,7 +72,7 @@ export default function ImageUploadModal({
       return
     }
 
-    if (!file || !filePreview) {
+    if (!file) {
       setErrorMessage('Silakan pilih gambar terlebih dahulu')
       return
     }
@@ -80,22 +80,15 @@ export default function ImageUploadModal({
     setIsUploading(true)
 
     try {
-      try {
-        const res = await uploadImageFn({
-          data: {
-            name: file.name,
-            type: file.type,
-            base64: filePreview,
-          },
-        })
-
-        onInsert({ url: res.url, alt: altText.trim() })
-      } catch {
-        onInsert({ url: filePreview, alt: altText.trim() })
-      }
+      const res = await uploadImageWithPresignedUrl(file, file.name)
+      onInsert({ url: res.url, alt: altText.trim() })
       handleClose()
-    } catch {
-      setErrorMessage('Gagal mengunggah gambar.')
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Gagal mengompresi dan mengunggah gambar.'
+      setErrorMessage(message)
     } finally {
       setIsUploading(false)
     }

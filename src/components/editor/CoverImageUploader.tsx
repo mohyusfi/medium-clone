@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Image as ImageIcon, Trash2, Upload, X } from 'lucide-react'
-import { uploadImageFn } from '#/server/upload'
+import { uploadImageWithPresignedUrl } from '#/lib/image-compression'
 
 interface CoverImageUploaderProps {
   value?: string | null
@@ -25,27 +25,14 @@ export default function CoverImageUploader({
     setIsUploading(true)
 
     try {
-      const reader = new FileReader()
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-
-      try {
-        const res = await uploadImageFn({
-          data: {
-            name: file.name,
-            type: file.type,
-            base64,
-          },
-        })
-        onChange(res.url)
-      } catch {
-        onChange(base64)
-      }
-    } catch {
-      setErrorMessage('Gagal memproses gambar cover.')
+      const res = await uploadImageWithPresignedUrl(file, file.name)
+      onChange(res.url)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Gagal memproses dan mengunggah gambar cover.'
+      setErrorMessage(message)
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {

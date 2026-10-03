@@ -8,13 +8,14 @@ import Underline from '@tiptap/extension-underline'
 import LinkExtension from '@tiptap/extension-link'
 import { LineHeight } from '#/components/editor/extensions/line-height'
 import {
+  Archive,
   ArrowLeft,
-  Check,
   CheckCircle2,
   Clock,
   ExternalLink,
   Globe,
   Loader2,
+  RotateCcw,
   Save,
   Send,
   Sliders,
@@ -26,10 +27,14 @@ import EditorBubbleMenu from '#/components/editor/EditorBubbleMenu'
 import ImageUploadModal from '#/components/editor/ImageUploadModal'
 import CoverImageUploader from '#/components/editor/CoverImageUploader'
 import ThemeToggle from '#/components/ThemeToggle'
-import { saveBlogFn } from '#/server/blogs'
-import { uploadImageFn } from '#/server/upload'
+import { getBlogByIdFn, saveBlogFn, toggleBlogStatusFn } from '#/server/blogs'
+import type { BlogStatus } from '#/db/schema'
+import { uploadImageWithPresignedUrl } from '#/lib/image-compression'
 
 export const Route = createFileRoute('/write')({
+  validateSearch: (search: Record<string, unknown>): { id?: number } => ({
+    id: search.id ? Number(search.id) : undefined,
+  }),
   component: WritePage,
 })
 
@@ -45,16 +50,20 @@ function generateSlug(text: string): string {
 }
 
 function WritePage() {
+  const search = Route.useSearch()
+  const editId = search.id
+
   const [isMounted, setIsMounted] = useState(false)
+  const [isLoadingServerBlog, setIsLoadingServerBlog] = useState(false)
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [isCustomSlug, setIsCustomSlug] = useState(false)
   const [coverImage, setCoverImage] = useState<string | null>(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'draft' | 'published'>(
-    'idle',
-  )
+  const [saveStatus, setSaveStatus] = useState<
+    'idle' | 'draft' | 'published' | 'archived'
+  >('idle')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [notification, setNotification] = useState<{
     type: 'success' | 'error'
@@ -63,9 +72,7 @@ function WritePage() {
   } | null>(null)
   const [savedAtText, setSavedAtText] = useState<string>('Draf lokal siap')
   const [showSlugEditor, setShowSlugEditor] = useState(false)
-  const [createdBlogId, setCreatedBlogId] = useState<number | undefined>(
-    undefined,
-  )
+  const [createdBlogId, setCreatedBlogId] = useState<number | undefined>(editId)
 
   const titleInputRef = useRef<HTMLTextAreaElement>(null)
   const slugInputId = useId()
@@ -137,23 +144,18 @@ function WritePage() {
   const handleDirectImageUpload = async (file: File) => {
     if (!editor) return
 
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = reader.result as string
-      try {
-        const res = await uploadImageFn({
-          data: {
-            name: file.name,
-            type: file.type,
-            base64,
-          },
-        })
-        editor.chain().focus().setImage({ src: res.url, alt: file.name }).run()
-      } catch {
+    try {
+      const res = await uploadImageWithPresignedUrl(file, file.name)
+      editor.chain().focus().setImage({ src: res.url, alt: file.name }).run()
+      setHasUnsavedChanges(true)
+    } catch {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = reader.result as string
         editor.chain().focus().setImage({ src: base64, alt: file.name }).run()
       }
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
   }
 
   useEffect(() => {
@@ -162,6 +164,38 @@ function WritePage() {
 
   useEffect(() => {
     if (!isMounted || !editor) return
+
+    if (editId) {
+      setIsLoadingServerBlog(true)
+      getBlogByIdFn({ data: { id: editId } })
+        .then((res) => {
+          const { blog } = res
+          setTitle(blog.title)
+          setSlug(blog.slug)
+          setIsCustomSlug(true)
+          if (blog.thumbnail) setCoverImage(blog.thumbnail)
+          if (blog.content) {
+            editor.commands.setContent(blog.content)
+          }
+          setCreatedBlogId(blog.id)
+          setSaveStatus(blog.status as BlogStatus)
+          setSavedAtText('Artikel dimuat dari server')
+          setHasUnsavedChanges(false)
+        })
+        .catch((err) => {
+          setNotification({
+            type: 'error',
+            message:
+              err instanceof Error
+                ? err.message
+                : 'Gagal memuat artikel dari server.',
+          })
+        })
+        .finally(() => {
+          setIsLoadingServerBlog(false)
+        })
+      return
+    }
 
     try {
       const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY)
@@ -184,10 +218,10 @@ function WritePage() {
     } catch {
       // ignore draft parse error
     }
-  }, [isMounted, editor])
+  }, [isMounted, editor, editId])
 
   useEffect(() => {
-    if (!isMounted || !editor) return
+    if (!isMounted || !editor || editId) return
 
     const timer = setTimeout(() => {
       try {
@@ -219,6 +253,7 @@ function WritePage() {
     isMounted,
     createdBlogId,
     editor,
+    editId,
   ])
 
   useEffect(() => {
@@ -254,7 +289,7 @@ function WritePage() {
     setHasUnsavedChanges(true)
   }
 
-  const handleSave = async (status: 'draft' | 'published') => {
+  const handleSave = async (status: BlogStatus) => {
     if (!title.trim()) {
       setNotification({
         type: 'error',
@@ -287,12 +322,17 @@ function WritePage() {
       setCreatedBlogId(res.blogId)
       setSaveStatus(status)
       setHasUnsavedChanges(false)
+
+      let message = 'Draf artikel berhasil disimpan ke database.'
+      if (status === 'published') {
+        message = 'Artikel berhasil dipublikasikan secara langsung!'
+      } else if (status === 'archived') {
+        message = 'Artikel berhasil dinonaktifkan (diarsipkan).'
+      }
+
       setNotification({
         type: 'success',
-        message:
-          status === 'published'
-            ? 'Artikel berhasil dipublikasikan secara langsung!'
-            : 'Draf artikel berhasil disimpan ke database.',
+        message,
         slug: res.slug,
       })
     } catch (err: unknown) {
@@ -309,13 +349,42 @@ function WritePage() {
     }
   }
 
+  const handleToggleArchive = async () => {
+    if (!createdBlogId) return
+    setIsSaving(true)
+    try {
+      const next = saveStatus === 'published' ? 'archived' : 'published'
+      const res = await toggleBlogStatusFn({
+        data: { id: createdBlogId, status: next },
+      })
+      setSaveStatus(res.status)
+      setNotification({
+        type: 'success',
+        message:
+          res.status === 'archived'
+            ? 'Artikel berhasil dinonaktifkan (diarsipkan).'
+            : 'Artikel berhasil diaktifkan kembali.',
+      })
+    } catch (err: unknown) {
+      setNotification({
+        type: 'error',
+        message:
+          err instanceof Error
+            ? err.message
+            : 'Gagal mengubah status artikel.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const editorText = editor?.getText() || ''
   const wordCount = editorText.trim()
     ? editorText.trim().split(/\s+/).length
     : 0
   const readTimeMinutes = Math.max(1, Math.ceil(wordCount / 200))
 
-  if (!isMounted) {
+  if (!isMounted || isLoadingServerBlog) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)]">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--color-text-muted)]" />
@@ -342,7 +411,11 @@ function WritePage() {
               /
             </span>
             <span className="text-xs text-[var(--color-text-muted)]">
-              {saveStatus === 'published' ? 'Published' : 'Draft'}
+              {saveStatus === 'published'
+                ? 'Published'
+                : saveStatus === 'archived'
+                  ? 'Non-aktif'
+                  : 'Draft'}
             </span>
           </div>
         </div>
@@ -361,6 +434,32 @@ function WritePage() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
+
+          {createdBlogId && saveStatus === 'published' && (
+            <button
+              type="button"
+              onClick={handleToggleArchive}
+              disabled={isSaving}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 text-xs font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-destructive)] hover:text-[var(--color-destructive)] cursor-pointer disabled:opacity-50"
+              title="Sembunyikan artikel dari publik"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Non-aktifkan</span>
+            </button>
+          )}
+
+          {createdBlogId && saveStatus === 'archived' && (
+            <button
+              type="button"
+              onClick={handleToggleArchive}
+              disabled={isSaving}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 transition hover:bg-emerald-500/20 cursor-pointer disabled:opacity-50"
+              title="Publikasikan kembali artikel"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Aktifkan Kembali</span>
+            </button>
+          )}
 
           <button
             type="button"
