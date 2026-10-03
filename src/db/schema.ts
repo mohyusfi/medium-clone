@@ -93,6 +93,8 @@ export const verifications = pgTable('verifications', {
     .notNull(),
 })
 
+export type BlogStatus = 'draft' | 'published' | 'archived'
+
 export const blogs = pgTable(
   'blogs',
   {
@@ -104,7 +106,7 @@ export const blogs = pgTable(
     slug: text('slug').notNull(),
     content: text('content').notNull(),
     thumbnail: text('thumbnail'),
-    status: text('status').default('draft').notNull(),
+    status: text('status').$type<BlogStatus>().default('draft').notNull(),
     publishedAt: timestamp('published_at'),
     createdAt: timestamp('created_at')
       .default(sql`(now())`)
