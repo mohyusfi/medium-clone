@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useId } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -6,7 +6,7 @@ import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import LinkExtension from '@tiptap/extension-link'
-import { LineHeight } from '#/components/editor/extensions/line-height'
+import { LineHeight } from '#/features/blog/components/editor/extensions/line-height'
 import {
   Archive,
   ArrowLeft,
@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Globe,
   Loader2,
+  Plus,
   RotateCcw,
   Save,
   Send,
@@ -22,14 +23,19 @@ import {
   Sparkles,
   X,
 } from 'lucide-react'
-import EditorToolbar from '#/components/editor/EditorToolbar'
-import EditorBubbleMenu from '#/components/editor/EditorBubbleMenu'
-import ImageUploadModal from '#/components/editor/ImageUploadModal'
-import CoverImageUploader from '#/components/editor/CoverImageUploader'
+import EditorToolbar from '#/features/blog/components/editor/EditorToolbar'
+import EditorBubbleMenu from '#/features/blog/components/editor/EditorBubbleMenu'
+import ImageUploadModal from '#/features/blog/components/editor/ImageUploadModal'
+import CoverImageUploader from '#/features/blog/components/editor/CoverImageUploader'
+import BlogTopicSelect from '#/features/blog/components/BlogTopicSelect'
 import ThemeToggle from '#/components/ThemeToggle'
-import { getBlogByIdFn, saveBlogFn, toggleBlogStatusFn } from '#/server/blogs'
-import type { BlogStatus } from '#/db/schema'
-import { uploadImageWithPresignedUrl } from '#/lib/image-compression'
+import {
+  getBlogByIdFn,
+  saveBlogFn,
+  toggleBlogStatusFn,
+} from '#/features/blog/server/blogs'
+import type { BlogStatus, BlogTopic } from '#/features/blog/types'
+import { uploadImageWithPresignedUrl } from '#/features/blog/lib/image-compression'
 
 export const Route = createFileRoute('/write')({
   validateSearch: (search: Record<string, unknown>): { id?: number } => ({
@@ -50,6 +56,7 @@ function generateSlug(text: string): string {
 }
 
 function WritePage() {
+  const navigate = useNavigate()
   const search = Route.useSearch()
   const editId = search.id
 
@@ -59,6 +66,7 @@ function WritePage() {
   const [slug, setSlug] = useState('')
   const [isCustomSlug, setIsCustomSlug] = useState(false)
   const [coverImage, setCoverImage] = useState<string | null>(null)
+  const [topic, setTopic] = useState<BlogTopic | null>(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<
@@ -88,7 +96,7 @@ function WritePage() {
       Underline,
       Image.configure({
         inline: false,
-        allowBase64: true,
+        allowBase64: false,
       }),
       LinkExtension.configure({
         openOnClick: false,
@@ -148,13 +156,14 @@ function WritePage() {
       const res = await uploadImageWithPresignedUrl(file, file.name)
       editor.chain().focus().setImage({ src: res.url, alt: file.name }).run()
       setHasUnsavedChanges(true)
-    } catch {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const base64 = reader.result as string
-        editor.chain().focus().setImage({ src: base64, alt: file.name }).run()
-      }
-      reader.readAsDataURL(file)
+    } catch (err: unknown) {
+      setNotification({
+        type: 'error',
+        message:
+          err instanceof Error
+            ? err.message
+            : 'Gagal mengunggah gambar ke penyimpanan Cloud.',
+      })
     }
   }
 
@@ -174,6 +183,7 @@ function WritePage() {
           setSlug(blog.slug)
           setIsCustomSlug(true)
           if (blog.thumbnail) setCoverImage(blog.thumbnail)
+          if (blog.topic) setTopic(blog.topic as BlogTopic)
           if (blog.content) {
             editor.commands.setContent(blog.content)
           }
@@ -207,6 +217,7 @@ function WritePage() {
           setIsCustomSlug(true)
         }
         if (parsed.coverImage) setCoverImage(parsed.coverImage)
+        if (parsed.topic) setTopic(parsed.topic as BlogTopic)
         if (parsed.content) {
           editor.commands.setContent(parsed.content)
         }
@@ -221,7 +232,7 @@ function WritePage() {
   }, [isMounted, editor, editId])
 
   useEffect(() => {
-    if (!isMounted || !editor || editId) return
+    if (!isMounted || !editor || editId || saveStatus === 'published') return
 
     const timer = setTimeout(() => {
       try {
@@ -229,6 +240,7 @@ function WritePage() {
           title,
           slug,
           coverImage,
+          topic,
           content: editor.getHTML(),
           blogId: createdBlogId,
           updatedAt: new Date().toISOString(),
@@ -249,11 +261,13 @@ function WritePage() {
     title,
     slug,
     coverImage,
+    topic,
     editor?.state.doc,
     isMounted,
     createdBlogId,
     editor,
     editId,
+    saveStatus,
   ])
 
   useEffect(() => {
@@ -315,6 +329,7 @@ function WritePage() {
           slug: finalSlug,
           content: contentHtml,
           thumbnail: coverImage,
+          topic: topic || null,
           status,
         },
       })
@@ -322,6 +337,22 @@ function WritePage() {
       setCreatedBlogId(res.blogId)
       setSaveStatus(status)
       setHasUnsavedChanges(false)
+
+      // Sync ?id= query param in URL
+      if (!editId || editId !== res.blogId) {
+        navigate({
+          to: '/write',
+          search: { id: res.blogId },
+          replace: true,
+        })
+      }
+
+      // Clear local storage draft on successful publication
+      if (status === 'published') {
+        try {
+          localStorage.removeItem(DRAFT_STORAGE_KEY)
+        } catch {}
+      }
 
       let message = 'Draf artikel berhasil disimpan ke database.'
       if (status === 'published') {
@@ -373,6 +404,43 @@ function WritePage() {
       })
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleStartNewArticle = () => {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm(
+        'Ada perubahan yang belum disimpan. Yakin ingin memulai draf baru?',
+      )
+    ) {
+      return
+    }
+
+    setTitle('')
+    setSlug('')
+    setIsCustomSlug(false)
+    setCoverImage(null)
+    setTopic(null)
+    setCreatedBlogId(undefined)
+    setSaveStatus('idle')
+    setHasUnsavedChanges(false)
+    setNotification(null)
+
+    editor?.commands.setContent('')
+
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY)
+    } catch {}
+
+    setSavedAtText('Draf baru siap')
+
+    if (editId) {
+      navigate({ to: '/write', search: {} })
+    }
+
+    if (titleInputRef.current) {
+      titleInputRef.current.style.height = 'auto'
     }
   }
 
@@ -461,6 +529,17 @@ function WritePage() {
 
           <button
             type="button"
+            onClick={handleStartNewArticle}
+            disabled={isSaving}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-text)] hover:text-[var(--color-text)] cursor-pointer disabled:opacity-50"
+            title="Mulai draf artikel baru"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Draf Baru</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => handleSave('draft')}
             disabled={isSaving}
             className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-text)] hover:text-[var(--color-text)] cursor-pointer disabled:opacity-50"
@@ -501,7 +580,7 @@ function WritePage() {
               : 'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200'
           }`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {notification.type === 'success' ? (
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             ) : (
@@ -510,12 +589,23 @@ function WritePage() {
             <span>{notification.message}</span>
             {notification.slug && (
               <Link
-                to="/"
+                to="/story/$slug"
+                params={{ slug: notification.slug }}
                 className="ml-2 inline-flex items-center gap-1 font-semibold underline underline-offset-2"
               >
                 <span>Lihat Cerita</span>
                 <ExternalLink className="h-3 w-3" />
               </Link>
+            )}
+            {notification.type === 'success' && saveStatus === 'published' && (
+              <button
+                type="button"
+                onClick={handleStartNewArticle}
+                className="ml-2 inline-flex items-center gap-1 rounded bg-emerald-700 px-2 py-0.5 font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 cursor-pointer"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Tulis Artikel Baru</span>
+              </button>
             )}
           </div>
           <button
@@ -547,21 +637,33 @@ function WritePage() {
           />
         </div>
 
-        <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
-          <div className="flex items-center gap-1.5">
-            <Globe className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
-            <span className="truncate max-w-[280px] sm:max-w-md font-mono text-[11px]">
-              story/{slug || 'judul-cerita'}
-            </span>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4 text-xs text-[var(--color-text-muted)]">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <Globe className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
+              <span className="truncate max-w-[240px] sm:max-w-xs font-mono text-[11px]">
+                story/{slug || 'judul-cerita'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSlugEditor((prev) => !prev)}
+              className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] cursor-pointer"
+            >
+              <Sliders className="h-2.5 w-2.5" />
+              <span>{showSlugEditor ? 'Tutup' : 'Ubah Slug'}</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowSlugEditor((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] cursor-pointer"
-          >
-            <Sliders className="h-2.5 w-2.5" />
-            <span>{showSlugEditor ? 'Tutup' : 'Ubah Slug'}</span>
-          </button>
+
+          <div>
+            <BlogTopicSelect
+              value={topic}
+              onChange={(newTopic) => {
+                setTopic(newTopic)
+                setHasUnsavedChanges(true)
+              }}
+            />
+          </div>
         </div>
 
         {showSlugEditor && (

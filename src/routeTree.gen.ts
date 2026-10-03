@@ -16,6 +16,7 @@ import { Route as WriteRouteImport } from './routes/write'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppAboutRouteImport } from './routes/_app/about'
 import { Route as AppProfileUserIdRouteImport } from './routes/_app/profile/$userId'
+import { Route as AppStorySlugRouteImport } from './routes/_app/story/$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const AppRoute = AppRouteImport.update({
@@ -52,6 +53,11 @@ const AppProfileUserIdRoute = AppProfileUserIdRouteImport.update({
   path: '/profile/$userId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStorySlugRoute = AppStorySlugRouteImport.update({
+  id: '/story/$slug',
+  path: '/story/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/write': typeof WriteRoute
   '/about': typeof AppAboutRoute
   '/profile/$userId': typeof AppProfileUserIdRoute
+  '/story/$slug': typeof AppStorySlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/about': typeof AppAboutRoute
   '/': typeof AppIndexRoute
   '/profile/$userId': typeof AppProfileUserIdRoute
+  '/story/$slug': typeof AppStorySlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/_app/about': typeof AppAboutRoute
   '/_app/': typeof AppIndexRoute
   '/_app/profile/$userId': typeof AppProfileUserIdRoute
+  '/_app/story/$slug': typeof AppStorySlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/write'
     | '/about'
     | '/profile/$userId'
+    | '/story/$slug'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/'
     | '/profile/$userId'
+    | '/story/$slug'
     | '/api/auth/$'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/_app/about'
     | '/_app/'
     | '/_app/profile/$userId'
+    | '/_app/story/$slug'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
@@ -177,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileUserIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/story/$slug': {
+      id: '/_app/story/$slug'
+      path: '/story/$slug'
+      fullPath: '/story/$slug'
+      preLoaderRoute: typeof AppStorySlugRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -191,12 +210,14 @@ interface AppRouteChildren {
   AppAboutRoute: typeof AppAboutRoute
   AppIndexRoute: typeof AppIndexRoute
   AppProfileUserIdRoute: typeof AppProfileUserIdRoute
+  AppStorySlugRoute: typeof AppStorySlugRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAboutRoute: AppAboutRoute,
   AppIndexRoute: AppIndexRoute,
   AppProfileUserIdRoute: AppProfileUserIdRoute,
+  AppStorySlugRoute: AppStorySlugRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

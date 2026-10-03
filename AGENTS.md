@@ -9,11 +9,16 @@
 
 - do not add comment in code build mode except it is important
 
-## Overview & Architecture
+## skills agent
+
+- use /frontend-design for frontend things
+- use react skills for doing with react
+
+## Overview &amp; Architecture
 
 - **Framework**: TanStack Start (React 19, Vite 8, Nitro adapter).
 - **Routing**: TanStack Router (file-based in `src/routes/`). Generates `src/routeTree.gen.ts`.
-- **Data & State**: TanStack Query with SSR hydration via `@tanstack/react-router-ssr-query`.
+- **Data &amp; State**: TanStack Query with SSR hydration via `@tanstack/react-router-ssr-query`.
 - **Styling**: Tailwind CSS v4 (`@tailwindcss/vite`, `@tailwindcss/typography`, `tw-animate-css`). Theme tokens defined in `src/styles.css`.
 - **Database**: Drizzle ORM (`mysql2`) with schema reference in `DATABASE.md`, schema definitions in `src/db/schema.ts`, and client in `src/db/index.ts`.
 - **MCP Integration**: Model Context Protocol endpoints in `src/routes/mcp.ts` and `src/utils/mcp-handler.ts`.
@@ -63,7 +68,7 @@ When verifying code changes, execute in order:
 npm run generate-routes && npm run check && npm run lint && npm run build
 ```
 
-## Gotchas & Operational Notes
+## Gotchas &amp; Operational Notes
 
 1. **Route Generation**: If TypeScript complains about missing routes or invalid path arguments in `src/routes/`, run `npm run generate-routes` (`tsr generate`) to sync `src/routeTree.gen.ts`.
 2. **Database Config**: Drizzle requires `DATABASE_URL` configured in `.env.local` or `.env` (`mysql://user:pass@host:port/dbname`).

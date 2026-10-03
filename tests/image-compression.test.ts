@@ -1,26 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-function calculateScaledDimensions(
-  width: number,
-  height: number,
-  maxDimension: number,
-): { width: number; height: number } {
-  if (width > maxDimension || height > maxDimension) {
-    if (width > height) {
-      return {
-        width: maxDimension,
-        height: Math.round((height * maxDimension) / width),
-      }
-    } else {
-      return {
-        width: Math.round((width * maxDimension) / height),
-        height: maxDimension,
-      }
-    }
-  }
-  return { width, height }
-}
+import { calculateScaledDimensions } from '../src/lib/image-compression'
 
 test('Image Compression: scales 4K landscape to maxDimension 1920px preserving 16:9 aspect ratio', () => {
   const scaled = calculateScaledDimensions(3840, 2160, 1920)

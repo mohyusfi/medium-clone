@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { useServerFn } from '@tanstack/react-start'
 import { getUserProfileFn, toggleFollowFn } from '@/server/users'
-import { toggleBlogStatusFn } from '@/server/blogs'
+import { toggleBlogStatusFn } from '#/features/blog/server/blogs'
 
 export const Route = createFileRoute('/_app/profile/$userId')({
   loader: async ({ params }) => {
@@ -39,6 +39,7 @@ function ProfilePage() {
   const [followersCount, setFollowersCount] = useState(
     data?.followersCount ?? 0,
   )
+  const [articles, setArticles] = useState(data?.articles ?? [])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -47,6 +48,7 @@ function ProfilePage() {
     if (data) {
       setIsFollowing(data.isFollowing)
       setFollowersCount(data.followersCount)
+      setArticles(data.articles)
     }
   }, [data])
 
@@ -75,7 +77,7 @@ function ProfilePage() {
     )
   }
 
-  const { user, followingCount, isSelf, currentUserId, articles } = data
+  const { user, followingCount, isSelf, currentUserId } = data
 
   const handleToggleFollow = async () => {
     if (!currentUserId) {
@@ -117,12 +119,33 @@ function ProfilePage() {
   const handleToggleStatus = async (blogId: number, currentStatus: string) => {
     setActionLoadingId(blogId)
     setErrorMessage(null)
+    const nextStatus = currentStatus === 'published' ? 'archived' : 'published'
+    const previousArticles = articles
+
+    // Optimistic UI update for article status
+    setArticles((prev) =>
+      prev.map((item) =>
+        item.id === blogId
+          ? {
+              ...item,
+              status: nextStatus,
+              publishedAt:
+                nextStatus === 'published'
+                  ? item.publishedAt || new Date()
+                  : null,
+            }
+          : item,
+      ),
+    )
+
     try {
-      const nextStatus =
-        currentStatus === 'published' ? 'archived' : 'published'
-      await toggleBlogStatus({ data: { id: blogId, status: nextStatus } })
+      await toggleBlogStatus({
+        data: { id: blogId, status: nextStatus },
+      })
       await router.invalidate()
     } catch (err: unknown) {
+      // Revert optimistic update
+      setArticles(previousArticles)
       setErrorMessage(
         err instanceof Error
           ? err.message
@@ -202,7 +225,7 @@ function ProfilePage() {
                 type="button"
                 onClick={handleToggleFollow}
                 disabled={isSubmitting}
-                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${
+                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold transition cursor-pointer ${
                   isFollowing
                     ? 'border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] hover:border-[var(--color-destructive)] hover:text-[var(--color-destructive)]'
                     : 'bg-[var(--color-inverse)] text-[var(--color-bg)] hover:opacity-90'
@@ -306,6 +329,14 @@ function ProfilePage() {
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
                         <span>{itemDate}</span>
+                        {item.topic && (
+                          <>
+                            <span>·</span>
+                            <span className="rounded bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
+                              {item.topic}
+                            </span>
+                          </>
+                        )}
                         {item.status === 'draft' && (
                           <>
                             <span>·</span>
@@ -318,7 +349,7 @@ function ProfilePage() {
                           <>
                             <span>·</span>
                             <span className="rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
-                              Non-aktif (Diarsipkan)
+                              Non-aktif
                             </span>
                           </>
                         )}
@@ -332,9 +363,15 @@ function ProfilePage() {
                         )}
                       </div>
                       <h3 className="font-serif text-lg font-bold text-[var(--color-text)] transition hover:underline">
-                        <Link to="/write" search={{ id: item.id }}>
-                          {item.title}
-                        </Link>
+                        {item.status === 'published' ? (
+                          <Link to="/story/$slug" params={{ slug: item.slug }}>
+                            {item.title}
+                          </Link>
+                        ) : (
+                          <Link to="/write" search={{ id: item.id }}>
+                            {item.title}
+                          </Link>
+                        )}
                       </h3>
                       {textSnippet && (
                         <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">
@@ -347,7 +384,7 @@ function ProfilePage() {
                           <Link
                             to="/write"
                             search={{ id: item.id }}
-                            className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-text)] hover:text-[var(--color-text)]"
+                            className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-text)] hover:text-[var(--color-text)] cursor-pointer"
                           >
                             <Edit3 className="h-3 w-3" />
                             <span>Edit</span>
@@ -405,12 +442,23 @@ function ProfilePage() {
                     </div>
                     {item.thumbnail && (
                       <div className="h-20 w-24 shrink-0 overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-surface)] sm:h-24 sm:w-32">
-                        <img
-                          src={item.thumbnail}
-                          alt={item.title}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
+                        {item.status === 'published' ? (
+                          <Link to="/story/$slug" params={{ slug: item.slug }}>
+                            <img
+                              src={item.thumbnail}
+                              alt={item.title}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </Link>
+                        ) : (
+                          <img
+                            src={item.thumbnail}
+                            alt={item.title}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        )}
                       </div>
                     )}
                   </div>
