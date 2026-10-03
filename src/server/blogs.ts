@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeaders } from '@tanstack/react-start/server'
+import { getRequest } from '@tanstack/react-start/server'
 import { and, eq, ne } from 'drizzle-orm'
 import { db } from '#/db/index'
+import type { BlogStatus } from '#/db/schema'
 import { blogs, users } from '#/db/schema'
 import { auth } from '@/lib/auth'
 
@@ -11,7 +12,7 @@ export interface SaveBlogInput {
   slug: string
   content: string
   thumbnail?: string | null
-  status: 'draft' | 'published'
+  status: BlogStatus
 }
 
 async function getOrCreateDefaultAuthorId(): Promise<string> {
@@ -46,9 +47,9 @@ async function getOrCreateDefaultAuthorId(): Promise<string> {
 
 async function resolveAuthorId(): Promise<string> {
   try {
-    const rawHeaders = getRequestHeaders()
+    const request = getRequest()
     const session = await auth.api.getSession({
-      headers: new Headers(rawHeaders as Record<string, string>),
+      headers: request.headers,
     })
     if (session?.user.id) {
       return session.user.id
@@ -105,15 +106,28 @@ export const saveBlogFn = createServerFn({ method: 'POST' })
     const now = new Date()
 
     if (id) {
+      const existing = await db.query.blogs.findFirst({
+        where: eq(blogs.id, id),
+      })
+
+      if (!existing) {
+        throw new Error('Artikel tidak ditemukan')
+      }
+
+      if (existing.userId !== userId) {
+        throw new Error('Anda tidak memiliki izin untuk mengedit artikel ini')
+      }
+
       await db
         .update(blogs)
         .set({
-          title,
+          title: title.trim(),
           slug: uniqueSlug,
           content,
           thumbnail: thumbnail || null,
           status,
-          publishedAt: status === 'published' ? now : null,
+          publishedAt:
+            status === 'published' ? existing.publishedAt || now : null,
           updatedAt: now,
         })
         .where(eq(blogs.id, id))
@@ -129,7 +143,7 @@ export const saveBlogFn = createServerFn({ method: 'POST' })
       .insert(blogs)
       .values({
         userId,
-        title,
+        title: title.trim(),
         slug: uniqueSlug,
         content,
         thumbnail: thumbnail || null,
@@ -142,5 +156,74 @@ export const saveBlogFn = createServerFn({ method: 'POST' })
       success: true,
       blogId: inserted.id,
       slug: uniqueSlug,
+    }
+  })
+
+export const getBlogByIdFn = createServerFn({ method: 'GET' })
+  .validator((data: { id: number }) => data)
+  .handler(async ({ data: { id } }) => {
+    const blog = await db.query.blogs.findFirst({
+      where: eq(blogs.id, id),
+      with: {
+        author: true,
+      },
+    })
+
+    if (!blog) {
+      throw new Error('Artikel tidak ditemukan')
+    }
+
+    const currentUserId = await resolveAuthorId()
+    const isAuthor = currentUserId === blog.userId
+
+    if (!isAuthor && blog.status !== 'published') {
+      throw new Error('Artikel tidak ditemukan atau belum dipublikasikan')
+    }
+
+    return {
+      blog,
+      isAuthor,
+      currentUserId,
+    }
+  })
+
+export const toggleBlogStatusFn = createServerFn({ method: 'POST' })
+  .validator((data: { id: number; status?: BlogStatus }) => data)
+  .handler(async ({ data: { id, status: requestedStatus } }) => {
+    const existing = await db.query.blogs.findFirst({
+      where: eq(blogs.id, id),
+    })
+
+    if (!existing) {
+      throw new Error('Artikel tidak ditemukan')
+    }
+
+    const currentUserId = await resolveAuthorId()
+    if (existing.userId !== currentUserId) {
+      throw new Error('Anda tidak memiliki izin untuk mengubah status artikel ini')
+    }
+
+    let nextStatus: BlogStatus
+    if (requestedStatus) {
+      nextStatus = requestedStatus
+    } else {
+      nextStatus = existing.status === 'published' ? 'archived' : 'published'
+    }
+
+    const now = new Date()
+    await db
+      .update(blogs)
+      .set({
+        status: nextStatus,
+        publishedAt: nextStatus === 'published' ? existing.publishedAt || now : null,
+        updatedAt: now,
+      })
+      .where(eq(blogs.id, id))
+
+    return {
+      success: true,
+      blogId: id,
+      previousStatus: existing.status,
+      status: nextStatus,
     }
   })
