@@ -1,147 +1,49 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import FeedTabs from '#/components/FeedTabs'
-import ArticleListItem from '#/components/ArticleListItem'
-import type { ArticleItem } from '#/components/ArticleListItem'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { getPublishedBlogsFn } from '#/features/blog/server/blogs'
+import BlogFeed from '#/features/blog/components/BlogFeed'
 import DiscoveryRail from '#/components/DiscoveryRail'
 
 export const Route = createFileRoute('/_app/')({
+  validateSearch: (search: Record<string, unknown>): { topic?: string } => ({
+    topic: typeof search.topic === 'string' ? search.topic : undefined,
+  }),
+  loaderDeps: ({ search: { topic } }) => ({ topic }),
+  loader: async ({ deps: { topic } }) => {
+    try {
+      const articles = await getPublishedBlogsFn({
+        data: { topic: topic || null },
+      })
+      return { articles }
+    } catch {
+      return { articles: [] }
+    }
+  },
   component: Home,
 })
 
-const sampleArticles: ArticleItem[] = [
-  {
-    id: '1',
-    title:
-      'Membedah Arsitektur TanStack Start: SSR Cepat dan Tipografi Tanpa Kerumitan',
-    description:
-      'Bagaimana memanfaatkan Vite 8, Nitro adapter, dan model routing berbasis berkas untuk menghasilkan pengalaman membaca digital yang instan dan responsif.',
-    date: 'Aug 28',
-    readTime: '6 min read',
-    author: {
-      name: 'Rahmat Hidayat',
-      publication: 'Palu Tech Review',
-    },
-    topic: 'Software Engineering',
-    stars: 342,
-    comments: 24,
-    thumbnail:
-      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80',
-    isMemberOnly: true,
-  },
-  {
-    id: '2',
-    title:
-      'Studi Geologi Sesar Palu-Koro: Evaluasi Ketahanan Infrastruktur Sipil',
-    description:
-      'Hasil survei lapangan dan pemodelan mikrotremor terbaru di wilayah Lembah Palu untuk standar konstruksi tahan gempa jangka panjang.',
-    date: 'Aug 25',
-    readTime: '11 min read',
-    author: {
-      name: 'Dr. Ir. Andi M.',
-      publication: 'Untad Civil Research',
-    },
-    topic: 'Riset Untad',
-    stars: 512,
-    comments: 38,
-    thumbnail:
-      'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '3',
-    title:
-      'Mengapa Tipografi Editorial Mengalahkan Pola Desain SaaS yang Klise',
-    description:
-      'Pentingnya Re: esensi publikasi digital: hierarki pembacaan alami, pembatas struktural 1px, dan penataan ruang tanpa kartu terapung yang berlebihan.',
-    date: 'Aug 21',
-    readTime: '5 min read',
-    author: {
-      name: 'Sarah Nurhaliza',
-    },
-    topic: 'Desain Editorial',
-    stars: 218,
-    comments: 15,
-    thumbnail:
-      'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '4',
-    title:
-      'Modernisasi Rantai Pasok Kakao Sulawesi Tengah dengan Pemantauan IoT',
-    description:
-      'Eksperimen lapangan pemantauan suhu dan kelembaban fermentasi biji kakao di pedalaman Sigi untuk meningkatkan nilai ekspor petani lokal.',
-    date: 'Aug 18',
-    readTime: '8 min read',
-    author: {
-      name: 'Laboratorium Agroteknologi',
-      publication: 'Fakultas Pertanian Untad',
-    },
-    topic: 'Agrikultur',
-    stars: 184,
-    comments: 9,
-    thumbnail:
-      'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=80',
-    isMemberOnly: true,
-  },
-  {
-    id: '5',
-    title:
-      'Membangun Model Prediksi Erosi Tanah Menggunakan Citra Satelit Landsat 9',
-    description:
-      'Metodologi pengolahan data geospasial DAS Palu dengan algoritma Random Forest untuk mitigasi sedimentasi perairan teluk.',
-    date: 'Aug 14',
-    readTime: '14 min read',
-    author: {
-      name: 'Tim Geosains Untad',
-    },
-    topic: 'Data Science',
-    stars: 429,
-    comments: 31,
-  },
-]
-
 function Home() {
-  const [activeTab, setActiveTab] = useState('for-you')
+  const { articles } = Route.useLoaderData()
+  const search = Route.useSearch()
+  const navigate = useNavigate()
 
-  const filteredArticles = sampleArticles.filter((article) => {
-    if (activeTab === 'featured') {
-      return (Number(article.stars) || 0) > 300
-    }
-    if (activeTab === 'academic') {
-      return (
-        article.topic === 'Riset Untad' ||
-        article.topic === 'Agrikultur' ||
-        article.topic === 'Data Science'
-      )
-    }
-    if (activeTab === 'technology') {
-      return (
-        article.topic === 'Software Engineering' ||
-        article.topic === 'Desain Editorial'
-      )
-    }
-    return true
-  })
+  const handleTopicChange = (newTopic: string) => {
+    navigate({
+      to: '/',
+      search: {
+        topic:
+          newTopic === 'all' || newTopic === 'for-you' ? undefined : newTopic,
+      },
+    })
+  }
 
   return (
     <>
       <main className="min-w-0 w-full flex-1 px-0 py-6 min-[900px]:px-8 min-[1200px]:max-w-[680px]">
-        <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-        <div className="flex flex-col">
-          {filteredArticles.map((article) => (
-            <ArticleListItem key={article.id} article={article} />
-          ))}
-        </div>
-
-        <div className="pt-8 text-center">
-          <button
-            type="button"
-            className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)] hover:bg-[var(--color-bg)]"
-          >
-            Load more stories
-          </button>
-        </div>
+        <BlogFeed
+          articles={articles}
+          activeTopic={search.topic || 'all'}
+          onTopicChange={handleTopicChange}
+        />
       </main>
 
       <div className="hidden min-[1200px]:block w-[340px] shrink-0 border-l border-[var(--color-border)] pl-8">
