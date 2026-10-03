@@ -113,6 +113,48 @@
   --radius-pill: var(--radius-pill);
 }
 
+.prose,
+.prose-neutral {
+  --tw-prose-body: var(--color-text);
+  --tw-prose-headings: var(--color-text);
+  --tw-prose-lead: var(--color-text-secondary);
+  --tw-prose-links: var(--color-text);
+  --tw-prose-bold: var(--color-text);
+  --tw-prose-counters: var(--color-text-secondary);
+  --tw-prose-bullets: var(--color-text-secondary);
+  --tw-prose-hr: var(--color-border);
+  --tw-prose-quotes: var(--color-text);
+  --tw-prose-quote-borders: var(--color-border);
+  --tw-prose-captions: var(--color-text-muted);
+  --tw-prose-code: var(--color-text);
+  --tw-prose-pre-code: var(--color-text);
+  --tw-prose-pre-bg: var(--color-surface);
+  --tw-prose-th-borders: var(--color-border);
+  --tw-prose-td-borders: var(--color-border);
+
+  --tw-prose-invert-body: var(--color-text);
+  --tw-prose-invert-headings: var(--color-text);
+  --tw-prose-invert-lead: var(--color-text-secondary);
+  --tw-prose-invert-links: var(--color-text);
+  --tw-prose-invert-bold: var(--color-text);
+  --tw-prose-invert-counters: var(--color-text-secondary);
+  --tw-prose-invert-bullets: var(--color-text-secondary);
+  --tw-prose-invert-hr: var(--color-border);
+  --tw-prose-invert-quotes: var(--color-text);
+  --tw-prose-invert-quote-borders: var(--color-border);
+  --tw-prose-invert-captions: var(--color-text-muted);
+  --tw-prose-invert-code: var(--color-text);
+  --tw-prose-invert-pre-code: var(--color-text);
+  --tw-prose-invert-pre-bg: var(--color-surface);
+  --tw-prose-invert-th-borders: var(--color-border);
+  --tw-prose-invert-td-borders: var(--color-border);
+}
+
+.prose strong,
+.prose-neutral strong {
+  color: var(--color-text);
+}
+
 html,
 body,
 #app {
@@ -142,4 +184,72 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+::selection {
+  background-color: var(--color-accent-soft);
+  color: #000000;
+}
+
+.dark ::selection {
+  background-color: var(--color-accent);
+  color: #000000;
+}
+
+.tiptap {
+  outline: none;
+  line-height: 1.15;
+}
+
+.tiptap p {
+  line-height: inherit;
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: var(--color-text-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-border);
+}
+
+.tiptap img.ProseMirror-selectednode {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.tiptap blockquote {
+  border-left: 3px solid var(--color-text);
+  padding-left: 1.25rem;
+  font-style: italic;
+  font-family: var(--font-serif);
+  color: var(--color-text-secondary);
+}
+
+.tiptap pre {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+  overflow-x: auto;
+}
+
+.tiptap hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 2.5rem 0;
 }

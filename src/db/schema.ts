@@ -1,90 +1,211 @@
-import { relations } from 'drizzle-orm'
-import type { AnyMySqlColumn } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import {
-  int,
-  longtext,
-  mysqlEnum,
-  mysqlTable,
+  boolean,
+  integer,
+  pgTable,
+  serial,
   text,
   timestamp,
-  uniqueIndex,
-  varchar,
-} from 'drizzle-orm/mysql-core'
+  unique,
+} from 'drizzle-orm/pg-core'
 
-export const users = mysqlTable('users', {
-  id: int('id').primaryKey().autoincrement(),
-  name: varchar('name', { length: 255 }).notNull(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  password: varchar('password', { length: 255 }).notNull(),
-  role: mysqlEnum('role', ['admin', 'user']).notNull().default('user'),
-  created_at: timestamp('created_at').defaultNow().notNull(),
-  updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-})
+export const users = pgTable(
+  'users',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    emailVerified: boolean('email_verified').default(false).notNull(),
+    image: text('image'),
+    role: text('role').default('user').notNull(),
+    banned: boolean('banned').default(false),
+    banReason: text('ban_reason'),
+    banExpires: timestamp('ban_expires'),
+    createdAt: timestamp('created_at')
+      .default(sql`(now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at')
+      .default(sql`(now())`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [unique('users_email_unique').on(table.email)],
+)
 
-export const blogs = mysqlTable('blogs', {
-  id: int('id').primaryKey().autoincrement(),
-  user_id: int('user_id')
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),
+    expiresAt: timestamp('expires_at').notNull(),
+    token: text('token').notNull(),
+    createdAt: timestamp('created_at')
+      .default(sql`(now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at')
+      .default(sql`(now())`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    impersonatedBy: text('impersonated_by'),
+  },
+  (table) => [unique('sessions_token_unique').on(table.token)],
+)
+
+export const accounts = pgTable('accounts', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  title: varchar('title', { length: 255 }).notNull(),
-  slug: varchar('slug', { length: 255 }).notNull().unique(),
-  content: longtext('content').notNull(),
-  thumbnail: varchar('thumbnail', { length: 500 }),
-  status: mysqlEnum('status', ['draft', 'published', 'archived'])
-    .notNull()
-    .default('draft'),
-  published_at: timestamp('published_at'),
-  created_at: timestamp('created_at').defaultNow().notNull(),
-  updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at')
+    .default(sql`(now())`)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .default(sql`(now())`)
+    .$onUpdate(() => new Date())
+    .notNull(),
 })
 
-export const comments = mysqlTable('comments', {
-  id: int('id').primaryKey().autoincrement(),
-  blog_id: int('blog_id')
+export const verifications = pgTable('verifications', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at')
+    .default(sql`(now())`)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .default(sql`(now())`)
+    .$onUpdate(() => new Date())
+    .notNull(),
+})
+
+export type BlogStatus = 'draft' | 'published' | 'archived'
+
+export const BLOG_TOPICS = [
+  'Teknologi',
+  'Riset Untad',
+  'Kecerdasan Buatan',
+  'Sulawesi Tengah',
+  'Data Science',
+  'Software Engineering',
+  'Lingkungan Hidup',
+  'Akademik',
+] as const
+export type BlogTopic = (typeof BLOG_TOPICS)[number]
+
+export const blogs = pgTable(
+  'blogs',
+  {
+    id: serial('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    slug: text('slug').notNull(),
+    content: text('content').notNull(),
+    thumbnail: text('thumbnail'),
+    topic: text('topic'),
+    status: text('status').$type<BlogStatus>().default('draft').notNull(),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at')
+      .default(sql`(now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at')
+      .default(sql`(now())`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [unique('blogs_slug_unique').on(table.slug)],
+)
+
+export const comments = pgTable('comments', {
+  id: serial('id').primaryKey(),
+  blogId: integer('blog_id')
     .notNull()
     .references(() => blogs.id, { onDelete: 'cascade' }),
-  user_id: int('user_id')
+  userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  parent_id: int('parent_id').references((): AnyMySqlColumn => comments.id, {
+  parentId: integer('parent_id').references((): AnyPgColumn => comments.id, {
     onDelete: 'cascade',
   }),
   content: text('content').notNull(),
-  created_at: timestamp('created_at').defaultNow().notNull(),
-  updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp('created_at')
+    .default(sql`(now())`)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .default(sql`(now())`)
+    .$onUpdate(() => new Date())
+    .notNull(),
 })
 
-export const likes = mysqlTable(
+export const likes = pgTable(
   'likes',
   {
-    id: int('id').primaryKey().autoincrement(),
-    blog_id: int('blog_id')
+    id: serial('id').primaryKey(),
+    blogId: integer('blog_id')
       .notNull()
       .references(() => blogs.id, { onDelete: 'cascade' }),
-    user_id: int('user_id')
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    created_at: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at')
+      .default(sql`(now())`)
+      .notNull(),
   },
-  (table) => [
-    uniqueIndex('likes_blog_user_idx').on(table.blog_id, table.user_id),
-  ],
+  (table) => [unique('likes_blog_user_idx').on(table.blogId, table.userId)],
 )
 
-export const saves = mysqlTable(
+export const saves = pgTable(
   'saves',
   {
-    id: int('id').primaryKey().autoincrement(),
-    user_id: int('user_id')
+    id: serial('id').primaryKey(),
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    blog_id: int('blog_id')
+    blogId: integer('blog_id')
       .notNull()
       .references(() => blogs.id, { onDelete: 'cascade' }),
-    created_at: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at')
+      .default(sql`(now())`)
+      .notNull(),
+  },
+  (table) => [unique('saves_user_blog_idx').on(table.userId, table.blogId)],
+)
+
+export const follows = pgTable(
+  'follows',
+  {
+    id: serial('id').primaryKey(),
+    followerId: text('follower_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    followingId: text('following_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at')
+      .default(sql`(now())`)
+      .notNull(),
   },
   (table) => [
-    uniqueIndex('saves_user_blog_idx').on(table.user_id, table.blog_id),
+    unique('follows_follower_following_idx').on(
+      table.followerId,
+      table.followingId,
+    ),
   ],
 )
 
@@ -93,11 +214,26 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   likes: many(likes),
   saves: many(saves),
+  followers: many(follows, { relationName: 'user_followers' }),
+  following: many(follows, { relationName: 'user_following' }),
+}))
+
+export const followsRelations = relations(follows, ({ one }) => ({
+  follower: one(users, {
+    fields: [follows.followerId],
+    references: [users.id],
+    relationName: 'user_following',
+  }),
+  following: one(users, {
+    fields: [follows.followingId],
+    references: [users.id],
+    relationName: 'user_followers',
+  }),
 }))
 
 export const blogsRelations = relations(blogs, ({ one, many }) => ({
   author: one(users, {
-    fields: [blogs.user_id],
+    fields: [blogs.userId],
     references: [users.id],
   }),
   comments: many(comments),
@@ -107,15 +243,15 @@ export const blogsRelations = relations(blogs, ({ one, many }) => ({
 
 export const commentsRelations = relations(comments, ({ one, many }) => ({
   blog: one(blogs, {
-    fields: [comments.blog_id],
+    fields: [comments.blogId],
     references: [blogs.id],
   }),
   author: one(users, {
-    fields: [comments.user_id],
+    fields: [comments.userId],
     references: [users.id],
   }),
   parent: one(comments, {
-    fields: [comments.parent_id],
+    fields: [comments.parentId],
     references: [comments.id],
     relationName: 'comment_replies',
   }),
@@ -126,28 +262,37 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
 
 export const likesRelations = relations(likes, ({ one }) => ({
   blog: one(blogs, {
-    fields: [likes.blog_id],
+    fields: [likes.blogId],
     references: [blogs.id],
   }),
   user: one(users, {
-    fields: [likes.user_id],
+    fields: [likes.userId],
     references: [users.id],
   }),
 }))
 
 export const savesRelations = relations(saves, ({ one }) => ({
   blog: one(blogs, {
-    fields: [saves.blog_id],
+    fields: [saves.blogId],
     references: [blogs.id],
   }),
   user: one(users, {
-    fields: [saves.user_id],
+    fields: [saves.userId],
     references: [users.id],
   }),
 }))
 
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
+
+export type Session = typeof sessions.$inferSelect
+export type NewSession = typeof sessions.$inferInsert
+
+export type Account = typeof accounts.$inferSelect
+export type NewAccount = typeof accounts.$inferInsert
+
+export type Verification = typeof verifications.$inferSelect
+export type NewVerification = typeof verifications.$inferInsert
 
 export type Blog = typeof blogs.$inferSelect
 export type NewBlog = typeof blogs.$inferInsert
@@ -160,3 +305,6 @@ export type NewLike = typeof likes.$inferInsert
 
 export type Save = typeof saves.$inferSelect
 export type NewSave = typeof saves.$inferInsert
+
+export type Follow = typeof follows.$inferSelect
+export type NewFollow = typeof follows.$inferInsert

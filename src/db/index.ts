@@ -1,8 +1,11 @@
-import { drizzle } from 'drizzle-orm/mysql2'
+import { drizzle } from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
+import * as schema from './schema'
 
-import * as schema from './schema.ts'
+const connectionString =
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:postgres@localhost:5432/postgres'
 
-export const db = drizzle(process.env.DATABASE_URL!, {
-  schema,
-  mode: 'default',
-})
+const client = postgres(connectionString, { prepare: false })
+
+export const db = drizzle(client, { schema })
