@@ -172,11 +172,48 @@ export const saves = pgTable(
   (table) => [unique('saves_user_blog_idx').on(table.userId, table.blogId)],
 )
 
+export const follows = pgTable(
+  'follows',
+  {
+    id: serial('id').primaryKey(),
+    followerId: text('follower_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    followingId: text('following_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at')
+      .default(sql`(now())`)
+      .notNull(),
+  },
+  (table) => [
+    unique('follows_follower_following_idx').on(
+      table.followerId,
+      table.followingId,
+    ),
+  ],
+)
+
 export const usersRelations = relations(users, ({ many }) => ({
   blogs: many(blogs),
   comments: many(comments),
   likes: many(likes),
   saves: many(saves),
+  followers: many(follows, { relationName: 'user_followers' }),
+  following: many(follows, { relationName: 'user_following' }),
+}))
+
+export const followsRelations = relations(follows, ({ one }) => ({
+  follower: one(users, {
+    fields: [follows.followerId],
+    references: [users.id],
+    relationName: 'user_following',
+  }),
+  following: one(users, {
+    fields: [follows.followingId],
+    references: [users.id],
+    relationName: 'user_followers',
+  }),
 }))
 
 export const blogsRelations = relations(blogs, ({ one, many }) => ({
@@ -253,3 +290,6 @@ export type NewLike = typeof likes.$inferInsert
 
 export type Save = typeof saves.$inferSelect
 export type NewSave = typeof saves.$inferInsert
+
+export type Follow = typeof follows.$inferSelect
+export type NewFollow = typeof follows.$inferInsert

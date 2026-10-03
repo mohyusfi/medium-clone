@@ -214,7 +214,8 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                           <span>Tulis Cerita</span>
                         </Link>
                         <Link
-                          to="/"
+                          to="/profile/$userId"
+                          params={{ userId: user.id }}
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center gap-2 px-4 py-2 text-xs text-[var(--color-text)] transition hover:bg-[var(--color-surface)]"
                         >
