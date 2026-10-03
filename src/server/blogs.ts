@@ -92,14 +92,26 @@ async function ensureUniqueSlug(
   }
 }
 
+export function validateBlogInput(data: { title: string }): void {
+  if (!data.title.trim()) {
+    throw new Error('Judul artikel tidak boleh kosong')
+  }
+}
+
+export function calculateNextBlogStatus(
+  currentStatus: BlogStatus,
+  requestedStatus?: BlogStatus,
+): BlogStatus {
+  if (requestedStatus) return requestedStatus
+  return currentStatus === 'published' ? 'archived' : 'published'
+}
+
 export const saveBlogFn = createServerFn({ method: 'POST' })
   .validator((data: SaveBlogInput) => data)
   .handler(async ({ data }) => {
     const { id, title, slug, content, thumbnail, status } = data
 
-    if (!title.trim()) {
-      throw new Error('Judul artikel tidak boleh kosong')
-    }
+    validateBlogInput({ title })
 
     const userId = await resolveAuthorId()
     const uniqueSlug = await ensureUniqueSlug(slug || title, id)
@@ -200,22 +212,20 @@ export const toggleBlogStatusFn = createServerFn({ method: 'POST' })
 
     const currentUserId = await resolveAuthorId()
     if (existing.userId !== currentUserId) {
-      throw new Error('Anda tidak memiliki izin untuk mengubah status artikel ini')
+      throw new Error(
+        'Anda tidak memiliki izin untuk mengubah status artikel ini',
+      )
     }
 
-    let nextStatus: BlogStatus
-    if (requestedStatus) {
-      nextStatus = requestedStatus
-    } else {
-      nextStatus = existing.status === 'published' ? 'archived' : 'published'
-    }
+    const nextStatus = calculateNextBlogStatus(existing.status, requestedStatus)
 
     const now = new Date()
     await db
       .update(blogs)
       .set({
         status: nextStatus,
-        publishedAt: nextStatus === 'published' ? existing.publishedAt || now : null,
+        publishedAt:
+          nextStatus === 'published' ? existing.publishedAt || now : null,
         updatedAt: now,
       })
       .where(eq(blogs.id, id))

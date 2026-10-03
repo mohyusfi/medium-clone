@@ -1,13 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import {
-  Home,
-  Bookmark,
-  User,
-  BookOpen,
-  Info,
-  Plus,
-  Compass,
-} from 'lucide-react'
+import { Home, BookOpen, Info, Plus, Compass } from 'lucide-react'
 
 interface SidebarProps {
   isOpenMobile?: boolean

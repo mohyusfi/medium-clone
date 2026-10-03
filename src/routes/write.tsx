@@ -178,7 +178,7 @@ function WritePage() {
             editor.commands.setContent(blog.content)
           }
           setCreatedBlogId(blog.id)
-          setSaveStatus(blog.status as BlogStatus)
+          setSaveStatus(blog.status)
           setSavedAtText('Artikel dimuat dari server')
           setHasUnsavedChanges(false)
         })
@@ -369,9 +369,7 @@ function WritePage() {
       setNotification({
         type: 'error',
         message:
-          err instanceof Error
-            ? err.message
-            : 'Gagal mengubah status artikel.',
+          err instanceof Error ? err.message : 'Gagal mengubah status artikel.',
       })
     } finally {
       setIsSaving(false)

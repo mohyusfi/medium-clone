@@ -12,15 +12,19 @@ export interface PresignedUrlResult {
   isFallback?: boolean
 }
 
+export function generatePresignedUploadPath(filename: string): string {
+  const safeName = filename
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, 30)
+  return `blog-images/${Date.now()}_${safeName || 'image'}.webp`
+}
+
 export const createPresignedUploadUrlFn = createServerFn({ method: 'POST' })
   .validator((data: { filename: string; fileType?: string }) => data)
   .handler(async ({ data }) => {
     const { filename } = data
-    const safeName = filename
-      .replace(/\.[^/.]+$/, '')
-      .replace(/[^a-zA-Z0-9_-]/g, '')
-      .slice(0, 30)
-    const filePath = `blog-images/${Date.now()}_${safeName || 'image'}.webp`
+    const filePath = generatePresignedUploadPath(filename)
 
     if (supabase) {
       const { data: signData, error } = await supabase.storage
@@ -42,7 +46,7 @@ export const createPresignedUploadUrlFn = createServerFn({ method: 'POST' })
         path: signData.path,
         publicUrl: publicUrlData.publicUrl,
         isFallback: false,
-      } as PresignedUrlResult
+      }
     }
 
     return {
@@ -50,7 +54,7 @@ export const createPresignedUploadUrlFn = createServerFn({ method: 'POST' })
       path: filePath,
       publicUrl: `/uploads/${path.basename(filePath)}`,
       isFallback: true,
-    } as PresignedUrlResult
+    }
   })
 
 const ALLOWED_MIME_TYPES: Record<string, string> = {

@@ -1,10 +1,11 @@
 import { Extension } from '@tiptap/core'
 
 declare module '@tiptap/core' {
-  interface Commands<TReturn> {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  interface Commands<ReturnType> {
     lineHeight: {
-      setLineHeight: (lineHeight: string) => TReturn
-      unsetLineHeight: () => TReturn
+      setLineHeight: (lineHeight: string) => ReturnType
+      unsetLineHeight: () => ReturnType
     }
   }
 }
@@ -51,12 +52,12 @@ export const LineHeight = Extension.create<LineHeightOptions>({
     return {
       setLineHeight:
         (lineHeight: string) =>
-        ({ tr, dispatch }) => {
+        ({ tr, dispatch }: { tr: any; dispatch?: any }) => {
           const { from, to } = tr.selection
           const types = this.options.types
           let applicable = false
 
-          tr.doc.nodesBetween(from, to, (node, pos) => {
+          tr.doc.nodesBetween(from, to, (node: any, pos: any) => {
             if (types.includes(node.type.name)) {
               applicable = true
               if (dispatch) {
@@ -72,12 +73,12 @@ export const LineHeight = Extension.create<LineHeightOptions>({
         },
       unsetLineHeight:
         () =>
-        ({ tr, dispatch }) => {
+        ({ tr, dispatch }: { tr: any; dispatch?: any }) => {
           const { from, to } = tr.selection
           const types = this.options.types
           let applicable = false
 
-          tr.doc.nodesBetween(from, to, (node, pos) => {
+          tr.doc.nodesBetween(from, to, (node: any, pos: any) => {
             if (types.includes(node.type.name)) {
               applicable = true
               if (dispatch) {
