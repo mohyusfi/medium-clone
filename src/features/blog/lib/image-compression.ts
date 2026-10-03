@@ -148,3 +148,14 @@ export async function uploadImageWithPresignedUrl(
     compressedSize: compressed.compressedSize,
   }
 }
+
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',')
+  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/webp'
+  const binary = atob(parts[1])
+  const array = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i)
+  }
+  return new Blob([array], { type: mime })
+}

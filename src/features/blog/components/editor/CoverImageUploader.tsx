@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Image as ImageIcon, Trash2, Upload, X } from 'lucide-react'
-import { uploadImageWithPresignedUrl } from '#/features/blog/lib/image-compression'
+import { compressImageToWebP } from '#/features/blog/lib/image-compression'
 
 interface CoverImageUploaderProps {
   value?: string | null
@@ -25,13 +25,11 @@ export default function CoverImageUploader({
     setIsUploading(true)
 
     try {
-      const res = await uploadImageWithPresignedUrl(file, file.name)
-      onChange(res.url)
+      const res = await compressImageToWebP(file, file.name)
+      onChange(res.dataUrl)
     } catch (err: unknown) {
       const message =
-        err instanceof Error
-          ? err.message
-          : 'Gagal memproses dan mengunggah gambar cover.'
+        err instanceof Error ? err.message : 'Gagal memproses gambar cover.'
       setErrorMessage(message)
     } finally {
       setIsUploading(false)
@@ -108,7 +106,7 @@ export default function CoverImageUploader({
           className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text)] cursor-pointer disabled:opacity-50"
         >
           <ImageIcon className="h-3.5 w-3.5" />
-          <span>{isUploading ? 'Mengunggah...' : 'Tambah Cover Gambar'}</span>
+          <span>{isUploading ? 'Memproses...' : 'Tambah Cover Gambar'}</span>
         </button>
 
         {!showUrlInput ? (

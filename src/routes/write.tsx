@@ -35,7 +35,11 @@ import {
   toggleBlogStatusFn,
 } from '#/features/blog/server/blogs'
 import type { BlogStatus, BlogTopic } from '#/features/blog/types'
-import { uploadImageWithPresignedUrl } from '#/features/blog/lib/image-compression'
+import {
+  compressImageToWebP,
+  dataUrlToBlob,
+  uploadImageWithPresignedUrl,
+} from '#/features/blog/lib/image-compression'
 
 export const Route = createFileRoute('/write')({
   validateSearch: (search: Record<string, unknown>): { id?: number } => ({
@@ -96,7 +100,7 @@ function WritePage() {
       Underline,
       Image.configure({
         inline: false,
-        allowBase64: false,
+        allowBase64: true,
       }),
       LinkExtension.configure({
         openOnClick: false,
@@ -153,16 +157,17 @@ function WritePage() {
     if (!editor) return
 
     try {
-      const res = await uploadImageWithPresignedUrl(file, file.name)
-      editor.chain().focus().setImage({ src: res.url, alt: file.name }).run()
+      const res = await compressImageToWebP(file, file.name)
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: res.dataUrl, alt: file.name })
+        .run()
       setHasUnsavedChanges(true)
     } catch (err: unknown) {
       setNotification({
         type: 'error',
-        message:
-          err instanceof Error
-            ? err.message
-            : 'Gagal mengunggah gambar ke penyimpanan Cloud.',
+        message: err instanceof Error ? err.message : 'Gagal memproses gambar.',
       })
     }
   }
@@ -315,20 +320,67 @@ function WritePage() {
 
     if (!editor) return
 
-    const contentHtml = editor.getHTML()
+    let contentHtml = editor.getHTML()
     const finalSlug = slug.trim() || generateSlug(title)
 
     setIsSaving(true)
     setNotification(null)
 
     try {
+      let finalCoverImage = coverImage
+
+      if (status === 'published') {
+        if (coverImage && coverImage.startsWith('data:image/')) {
+          const blob = dataUrlToBlob(coverImage)
+          const res = await uploadImageWithPresignedUrl(blob, 'cover.webp')
+          finalCoverImage = res.url
+          setCoverImage(res.url)
+        }
+
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(contentHtml, 'text/html')
+        const images = Array.from(doc.querySelectorAll('img'))
+        const localDataUrls = Array.from(
+          new Set(
+            images
+              .map((img) => img.getAttribute('src'))
+              .filter((src): src is string =>
+                Boolean(src && src.startsWith('data:image/')),
+              ),
+          ),
+        )
+
+        if (localDataUrls.length > 0) {
+          const urlMap = new Map<string, string>()
+          for (let i = 0; i < localDataUrls.length; i++) {
+            const dataUrl = localDataUrls[i]
+            const blob = dataUrlToBlob(dataUrl)
+            const res = await uploadImageWithPresignedUrl(
+              blob,
+              `content-image-${i + 1}.webp`,
+            )
+            urlMap.set(dataUrl, res.url)
+          }
+
+          images.forEach((img) => {
+            const src = img.getAttribute('src')
+            if (src && urlMap.has(src)) {
+              img.setAttribute('src', urlMap.get(src)!)
+            }
+          })
+
+          contentHtml = doc.body.innerHTML
+          editor.commands.setContent(contentHtml)
+        }
+      }
+
       const res = await saveBlogFn({
         data: {
           id: createdBlogId,
           title: title.trim(),
           slug: finalSlug,
           content: contentHtml,
-          thumbnail: coverImage,
+          thumbnail: finalCoverImage,
           topic: topic || null,
           status,
         },
@@ -633,7 +685,7 @@ function WritePage() {
             onChange={handleTitleChange}
             placeholder="Judul Cerita..."
             rows={1}
-            className="w-full resize-none overflow-hidden bg-transparent font-serif text-3xl font-bold tracking-tight text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none sm:text-4xl md:text-5xl"
+            className="w-full resize-none overflow-hidden bg-transparent font-serif text-3xl font-bold tracking-tight text-[var(--color-text)] placeholder-[var(--color-text-muted)] border-none outline-none ring-0 focus:border-none focus:outline-none focus:ring-0 shadow-none sm:text-4xl md:text-5xl"
           />
         </div>
 

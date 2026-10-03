@@ -5,7 +5,7 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react'
-import { uploadImageWithPresignedUrl } from '#/features/blog/lib/image-compression'
+import { compressImageToWebP } from '#/features/blog/lib/image-compression'
 
 interface ImageUploadModalProps {
   isOpen: boolean
@@ -80,14 +80,12 @@ export default function ImageUploadModal({
     setIsUploading(true)
 
     try {
-      const res = await uploadImageWithPresignedUrl(file, file.name)
-      onInsert({ url: res.url, alt: altText.trim() })
+      const res = await compressImageToWebP(file, file.name)
+      onInsert({ url: res.dataUrl, alt: altText.trim() })
       handleClose()
     } catch (err: unknown) {
       const message =
-        err instanceof Error
-          ? err.message
-          : 'Gagal mengompresi dan mengunggah gambar.'
+        err instanceof Error ? err.message : 'Gagal mengompresi gambar.'
       setErrorMessage(message)
     } finally {
       setIsUploading(false)
@@ -257,7 +255,7 @@ export default function ImageUploadModal({
               {isUploading ? (
                 <>
                   <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-bg)] border-t-transparent" />
-                  <span>Mengunggah...</span>
+                  <span>Memproses...</span>
                 </>
               ) : (
                 <span>Sisipkan</span>
