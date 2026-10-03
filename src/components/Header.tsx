@@ -130,8 +130,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
               {user ? (
                 <Link
-                  to="/"
-                  hash="write"
+                  to="/write"
                   className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)] no-underline transition hover:text-[var(--color-text)]"
                 >
                   <SquarePen className="h-4 w-4" />
@@ -206,6 +205,14 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                       </div>
 
                       <div className="py-1">
+                        <Link
+                          to="/write"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-xs text-[var(--color-text)] transition hover:bg-[var(--color-surface)]"
+                        >
+                          <SquarePen className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
+                          <span>Tulis Cerita</span>
+                        </Link>
                         <Link
                           to="/"
                           onClick={() => setIsUserMenuOpen(false)}
