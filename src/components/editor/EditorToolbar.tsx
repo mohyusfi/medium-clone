@@ -1,3 +1,4 @@
+import LineHeightSelector from '#/components/editor/LineHeightSelector'
 import type { Editor } from '@tiptap/react'
 import {
   Bold,
@@ -117,6 +118,10 @@ export default function EditorToolbar({
         >
           <Heading3 className="h-3.5 w-3.5" />
         </button>
+
+        <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
+
+        <LineHeightSelector editor={editor} />
 
         <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
+import LineHeightSelector from '#/components/editor/LineHeightSelector'
 import {
   Bold,
   Heading2,
@@ -195,6 +196,10 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
       >
         <Quote className="h-3.5 w-3.5" />
       </button>
+
+      <div className="mx-0.5 h-3.5 w-px bg-[var(--color-border)]" />
+
+      <LineHeightSelector editor={editor} isCompact />
     </div>
   )
 }

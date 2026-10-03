@@ -144,8 +144,25 @@ body {
   }
 }
 
+::selection {
+  background-color: var(--color-accent-soft);
+  color: #000000;
+}
+
+.dark ::selection {
+  background-color: var(--color-accent);
+  color: #000000;
+}
+
 .tiptap {
   outline: none;
+  line-height: 1.15;
+}
+
+.tiptap p {
+  line-height: inherit;
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
 }
 
 .tiptap p.is-editor-empty:first-child::before {

@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import LinkExtension from '@tiptap/extension-link'
+import { LineHeight } from '#/components/editor/extensions/line-height'
 import {
   ArrowLeft,
   Check,
@@ -93,11 +94,14 @@ function WritePage() {
       Placeholder.configure({
         placeholder: 'Mulai tulis artikel, catatan riset, atau opini Anda...',
       }),
+      LineHeight.configure({
+        types: ['paragraph', 'heading'],
+      }),
     ],
     editorProps: {
       attributes: {
         class:
-          'prose dark:prose-invert max-w-none focus:outline-none min-h-[420px] text-[17px] leading-relaxed',
+          'prose dark:prose-invert max-w-none focus:outline-none min-h-[420px] text-[17px] leading-[1.15]',
       },
       handleDrop: (_view, event) => {
         const files = event.dataTransfer?.files

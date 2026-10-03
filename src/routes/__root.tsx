@@ -73,7 +73,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans antialiased selection:bg-[var(--color-accent-soft)] selection:text-black">
+      <body className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans antialiased selection:bg-[var(--color-accent-soft)] selection:text-black dark:selection:bg-[var(--color-accent)] dark:selection:text-black">
         <AnnouncementBar />
         {children}
         <TanStackDevtools
